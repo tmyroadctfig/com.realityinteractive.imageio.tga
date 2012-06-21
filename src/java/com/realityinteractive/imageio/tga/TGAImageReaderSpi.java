@@ -173,15 +173,46 @@ public class TGAImageReaderSpi extends ImageReaderSpi
             // not known or allowed then false is returned.
             // NOTE:  1.0.0 only supports un/compressed true color
             inputStream.readUnsignedByte(); // idLength
-            inputStream.readUnsignedByte(); // has color map
-            final int imageType = inputStream.readUnsignedByte();
-            if( (imageType != TGAConstants.TRUE_COLOR) && 
-                (imageType != TGAConstants.RLE_TRUE_COLOR) &&
-                (imageType != TGAConstants.COLOR_MAP) && 
-                (imageType != TGAConstants.RLE_COLOR_MAP) ) 
+            
+            int colourMapType = inputStream.readUnsignedByte();
+            if (colourMapType != 0 && colourMapType != 1)
             {
                 return false;
-            } /* else -- it's *possible* (though not known) that this is a TGA */
+            }
+            
+            int imageType = inputStream.readUnsignedByte();
+            if( (imageType != TGAConstants.NO_IMAGE) && 
+                (imageType != TGAConstants.COLOR_MAP) && 
+                (imageType != TGAConstants.TRUE_COLOR) &&
+                (imageType != TGAConstants.MONO) &&
+                (imageType != TGAConstants.RLE_TRUE_COLOR) &&
+                (imageType != TGAConstants.RLE_COLOR_MAP) &&
+                (imageType != TGAConstants.RLE_MONO) ) 
+            {
+                return false;
+            } 
+            
+            inputStream.skipBytes(4);
+            int colourMapBits = inputStream.readUnsignedByte(); // Offset 7
+            
+            // Defined as being 15, 16, 24 or 32 but I saw 0 in reality.
+            if (colourMapBits != 0 &&
+                colourMapBits != 15 &&
+                colourMapBits != 16 &&
+                colourMapBits != 24 && 
+                colourMapBits != 32)
+            {
+                return false;
+            }
+            
+            inputStream.skipBytes(8);
+            int bits = inputStream.readUnsignedByte(); // Offset 16
+            if (bits != 8 && bits != 16 && bits != 24 && bits != 32)
+            {
+                return false;
+            }
+            
+            /* else -- it's *possible* (though not known) that this is a TGA */
 
             return true;
         } finally
