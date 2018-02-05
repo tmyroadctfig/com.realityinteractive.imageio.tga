@@ -1,30 +1,28 @@
-package com.realityinteractive.imageio.tga;
-
 /*
  * TGAImageReaderSpi.java
- * Copyright (c) 2003 Reality Interactive, Inc.  
+ * Copyright (c) 2003 Reality Interactive, Inc.
  *   See bottom of file for license and warranty information.
  * Created on Sep 26, 2003
  */
 
-import java.io.IOException;
-import java.util.Locale;
+package com.realityinteractive.imageio.tga;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
+import java.io.IOException;
+import java.util.Locale;
 
 /**
  * <p>A service provider for reading TGA images.  Only {@link javax.imageio.stream.ImageInputStream}
  * input types are allowed.  See {@link com.realityinteractive.imageio.tga.TGAImageReader}
  * for supported features.</p>
- * 
+ *
  * @author Rob Grzywinski <a href="mailto:rgrzywinski@realityinteractive.com">rgrzywinski@realityinteractive.com</a>
  * @version $Id: TGAImageReaderSpi.java,v 1.1 2005/04/12 11:23:53 ornedan Exp $
  * @since 1.0
  */
-public class TGAImageReaderSpi extends ImageReaderSpi
-{
+public class TGAImageReaderSpi extends ImageReaderSpi {
     // =========================================================================
     // NOTE:  these should be package (default protected) as it is used 
     //        frequently elsewhere
@@ -41,25 +39,25 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     /**
      * <p>The class name for the TGA image reader.</p>
      */
-    static final String READER_CLASSNAME = 
-        "com.realityinteractive.imageio.tga.TGAImageReader";
+    static final String READER_CLASSNAME =
+            "com.realityinteractive.imageio.tga.TGAImageReader";
 
     /**
      * <p>The format names.</p>
      */
-    static final String[] FORMAT_NAMES = { "tga", "targa" };
+    static final String[] FORMAT_NAMES = {"tga", "targa"};
 
     /**
      * <p>The canonical suffix names.</p>
      */
-    static final String[] SUFFIXES = { "tga", "targa" };
+    static final String[] SUFFIXES = {"tga", "targa"};
 
     /**
      * <p>The supported mime types.</p>
      */
     static final String[] MIME_TYPES =
-        { "application/tga", "application/x-tga", "application/x-targa", 
-          "image/tga", "image/x-tga", "image/targa", "image/x-targa" };
+            {"application/tga", "application/x-tga", "application/x-targa",
+                    "image/tga", "image/x-tga", "image/targa", "image/x-targa"};
 
     /**
      * <p>This is a read-only TGA plugin.</p>
@@ -72,13 +70,13 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     static final boolean SUPPORTS_STANDARD_STREAM_METADATA_FORMAT = false;
 
     /**
-     * <p>There is no "native" stream metadata formats supported by the TGA 
+     * <p>There is no "native" stream metadata formats supported by the TGA
      * plugin.</p>
      */
     static final String NATIVE_STREAM_METADATA_FORMAT_NAME = null;
 
     /**
-     * <p>There is no "native" stream metadata formats supported by the TGA 
+     * <p>There is no "native" stream metadata formats supported by the TGA
      * plugin.</p>
      */
     static final String NATIVE_STREAM_METADATA_FORMAT_CLASSNAME = null;
@@ -99,13 +97,13 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     static final boolean SUPPORTS_STANDARD_IMAGE_METADATA_FORMAT = false;
 
     /**
-     * <p>There are no "native" image metadata formats supported by the TGA 
+     * <p>There are no "native" image metadata formats supported by the TGA
      * plugin.</p>
      */
     static final String NATIVE_IMAGE_METADATA_FORMAT_NAME = null;
 
     /**
-     * <p>There are no "native" image metadata formats supported by the TGA 
+     * <p>There are no "native" image metadata formats supported by the TGA
      * plugin.</p>
      */
     static final String NATIVE_IMAGE_METADATA_FORMAT_CLASSNAME = null;
@@ -121,102 +119,94 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     static final String[] EXTRA_IMAGE_METADATA_FORMAT_CLASSNAMES = null;
 
     // =========================================================================
+
     /**
      * <p>Constructs an {@link javax.imageio.spi.ImageReaderSpi} that accepts
      * {@link javax.imageio.stream.ImageInputStream} as its input type.</p>
-     * 
+     *
      * @see javax.imageio.spi.ImageReaderSpi#ImageReaderSpi()
      */
-    public TGAImageReaderSpi()
-    {
-        super(VENDOR_NAME, VERSION, FORMAT_NAMES, SUFFIXES, MIME_TYPES, 
-              READER_CLASSNAME,
-              ImageReaderSpi.STANDARD_INPUT_TYPE,
-              WRITER_SPI_CLASSNAMES,
-              SUPPORTS_STANDARD_STREAM_METADATA_FORMAT,
-              NATIVE_STREAM_METADATA_FORMAT_NAME,
-              NATIVE_STREAM_METADATA_FORMAT_CLASSNAME,
-              EXTRA_STREAM_METADATA_FORMAT_NAMES,
-              EXTRA_STREAM_METADATA_FORMAT_CLASSNAMES,
-              SUPPORTS_STANDARD_IMAGE_METADATA_FORMAT,
-              NATIVE_IMAGE_METADATA_FORMAT_NAME,
-              NATIVE_IMAGE_METADATA_FORMAT_CLASSNAME,
-              EXTRA_IMAGE_METADATA_FORMAT_NAMES,
-              EXTRA_IMAGE_METADATA_FORMAT_CLASSNAMES);
+    public TGAImageReaderSpi() {
+        super(VENDOR_NAME, VERSION, FORMAT_NAMES, SUFFIXES, MIME_TYPES,
+                READER_CLASSNAME,
+                new Class[]{ImageInputStream.class},
+                WRITER_SPI_CLASSNAMES,
+                SUPPORTS_STANDARD_STREAM_METADATA_FORMAT,
+                NATIVE_STREAM_METADATA_FORMAT_NAME,
+                NATIVE_STREAM_METADATA_FORMAT_CLASSNAME,
+                EXTRA_STREAM_METADATA_FORMAT_NAMES,
+                EXTRA_STREAM_METADATA_FORMAT_CLASSNAMES,
+                SUPPORTS_STANDARD_IMAGE_METADATA_FORMAT,
+                NATIVE_IMAGE_METADATA_FORMAT_NAME,
+                NATIVE_IMAGE_METADATA_FORMAT_CLASSNAME,
+                EXTRA_IMAGE_METADATA_FORMAT_NAMES,
+                EXTRA_IMAGE_METADATA_FORMAT_CLASSNAMES);
     }
 
     /**
      * @see javax.imageio.spi.ImageReaderSpi#canDecodeInput(java.lang.Object)
      */
-    public boolean canDecodeInput(final Object source) 
-        throws IOException
-    {
+    public boolean canDecodeInput(final Object source)
+            throws IOException {
         // NOTE:  the input source must be left in the same state as it started
         //        at (mark() and reset() should be used on ImageInputStream)
 
         // ensure that the input type is a ImageInputStream as that is all that
         // is supported
-        if(!(source instanceof ImageInputStream))
+        if (!(source instanceof ImageInputStream))
             return false;
         /* else -- source is a ImageInputStream */
 
         // cast to ImageInputStream for convenience
-        final ImageInputStream inputStream = (ImageInputStream)source;
+        final ImageInputStream inputStream = (ImageInputStream) source;
 
-        try
-        {
+        try {
             // set a mark at the current position so that the stream can be reset
             inputStream.mark();
-    
+
             // there's no ideidentifiable header on a TGA file so a punt must 
             // occur.  This will attempt to read the image type and if it is
             // not known or allowed then false is returned.
             // NOTE:  1.0.0 only supports un/compressed true color
             inputStream.readUnsignedByte(); // idLength
-            
+
             int colourMapType = inputStream.readUnsignedByte();
-            if (colourMapType != 0 && colourMapType != 1)
-            {
+            if (colourMapType != 0 && colourMapType != 1) {
                 return false;
             }
-            
+
             int imageType = inputStream.readUnsignedByte();
-            if( (imageType != TGAConstants.NO_IMAGE) && 
-                (imageType != TGAConstants.COLOR_MAP) && 
-                (imageType != TGAConstants.TRUE_COLOR) &&
-                (imageType != TGAConstants.MONO) &&
-                (imageType != TGAConstants.RLE_TRUE_COLOR) &&
-                (imageType != TGAConstants.RLE_COLOR_MAP) &&
-                (imageType != TGAConstants.RLE_MONO) ) 
-            {
+            if ((imageType != TGAConstants.NO_IMAGE) &&
+                    (imageType != TGAConstants.COLOR_MAP) &&
+                    (imageType != TGAConstants.TRUE_COLOR) &&
+                    (imageType != TGAConstants.MONO) &&
+                    (imageType != TGAConstants.RLE_TRUE_COLOR) &&
+                    (imageType != TGAConstants.RLE_COLOR_MAP) &&
+                    (imageType != TGAConstants.RLE_MONO)) {
                 return false;
-            } 
-            
+            }
+
             inputStream.skipBytes(4);
             int colourMapBits = inputStream.readUnsignedByte(); // Offset 7
-            
+
             // Defined as being 15, 16, 24 or 32 but I saw 0 in reality.
             if (colourMapBits != 0 &&
-                colourMapBits != 15 &&
-                colourMapBits != 16 &&
-                colourMapBits != 24 && 
-                colourMapBits != 32)
-            {
+                    colourMapBits != 15 &&
+                    colourMapBits != 16 &&
+                    colourMapBits != 24 &&
+                    colourMapBits != 32) {
                 return false;
             }
-            
+
             inputStream.skipBytes(8);
             int bits = inputStream.readUnsignedByte(); // Offset 16
             if (bits != 8 && bits != 16 && bits != 24 && bits != 32)
-            {
                 return false;
-            }
-            
+
             /* else -- it's *possible* (though not known) that this is a TGA */
 
             return true;
-        } finally
-        {            
+        } finally {
             // reset so that the ImageInputStream is put back where it was
             inputStream.reset();
         }
@@ -225,9 +215,7 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     /**
      * @see javax.imageio.spi.ImageReaderSpi#createReaderInstance(java.lang.Object)
      */
-    public ImageReader createReaderInstance(final Object extension)
-        throws IOException
-    {
+    public ImageReader createReaderInstance(final Object extension) {
         // construct and return an ImageReader using this SPI
         return new TGAImageReader(this);
     }
@@ -235,8 +223,7 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     /**
      * @see javax.imageio.spi.IIOServiceProvider#getDescription(java.util.Locale)
      */
-    public String getDescription(final Locale locale)
-    {
+    public String getDescription(final Locale locale) {
         return "TGA"; // FIXME:  localize
     }
 }

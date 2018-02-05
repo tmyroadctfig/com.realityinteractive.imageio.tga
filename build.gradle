@@ -1,0 +1,55 @@
+import org.gradle.internal.os.OperatingSystem
+
+apply plugin: 'java'
+
+// jitpack
+apply plugin: 'maven'
+group = 'com.realityinteractive.imageio.tga'
+
+//apply plugin: 'application'
+//mainClassName = 'uno.caps.CapsKt'
+
+buildscript {
+
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.2'
+        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.1'
+    }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'org.junit.platform.gradle.plugin'
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "https://jitpack.io" }
+}
+
+dependencies {
+    testCompile(
+            'org.junit.jupiter:junit-jupiter-api:5.0.1'
+    )
+    testRuntime(
+            'org.junit.jupiter:junit-jupiter-engine:5.0.1'
+    )
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
