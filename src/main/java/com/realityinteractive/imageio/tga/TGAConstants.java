@@ -1,20 +1,21 @@
+package com.realityinteractive.imageio.tga;
+
 /*
  * TGAConstants.java
- * Copyright (c) 2003 Reality Interactive, Inc.
+ * Copyright (c) 2003 Reality Interactive, Inc.  
  *   See bottom of file for license and warranty information.
  * Created on Sep 26, 2003
  */
 
-package com.realityinteractive.imageio.tga;
-
 /**
- * <p>Various header and such constants for the TGA image format.</p>
- *
+ * <p>Various header and such constants for the TGA image format.</p> 
+ * 
  * @author Rob Grzywinski <a href="mailto:rgrzywinski@realityinteractive.com">rgrzywinski@realityinteractive.com</a>
  * @version $Id: TGAConstants.java,v 1.1 2005/04/12 11:23:53 ornedan Exp $
  * @since 1.0
  */
-public interface TGAConstants {
+public interface TGAConstants
+{
     // =========================================================================
     // image types
     /**
