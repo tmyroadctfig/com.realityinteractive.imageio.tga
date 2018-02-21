@@ -276,7 +276,7 @@ public class TGAImageReader extends ImageReader
         checkImageIndex(imageIndex);
 
         // get the header and return the width
-        return getHeader().getHeight();
+        return getHeader().getWidth();
     }
 
     /**
