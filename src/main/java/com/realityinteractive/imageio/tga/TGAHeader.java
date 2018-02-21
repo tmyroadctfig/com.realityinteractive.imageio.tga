@@ -43,7 +43,7 @@ public class TGAHeader
     private boolean hasColorMap;
 
     /**
-     * <p>The type of image.  See the image type constants in {@link com.realityinteractive.imageio.tga.TGAConstants}
+     * <p>The type of image.  See the image type constants in {@link TGAConstants}
      * for allowed values.</p> 
      */
     private int imageType;
@@ -144,7 +144,7 @@ public class TGAHeader
     public TGAHeader() {}
 
     /**
-     * <p>Constructs and populates a TGA header from the specified {@link javax.imageio.stream.ImageInputStream}.</p>
+     * <p>Constructs and populates a TGA header from the specified {@link ImageInputStream}.</p>
      * 
      * @param  inputStream the <code>ImageInputStream</code> from which the 
      *         header data is read
@@ -159,7 +159,7 @@ public class TGAHeader
     }
 
     /**
-     * <p>Reads and populates the header from the specifed {@link javax.imageio.stream.ImageInputStream}.
+     * <p>Reads and populates the header from the specifed {@link ImageInputStream}.
      * Any existing values will be over written.</p>
      * 
      * <p>The <code>ImageInputStream</code> will be changed as a result of this
@@ -266,7 +266,7 @@ public class TGAHeader
     }
 
     /**
-     * <p>Retrieves the type of image.  See the image type constants in {@link com.realityinteractive.imageio.tga.TGAConstants}
+     * <p>Retrieves the type of image.  See the image type constants in {@link TGAConstants}
      * for allowed values.</p> 
      */
     public int getImageType()

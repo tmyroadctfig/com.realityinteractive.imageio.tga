@@ -12,7 +12,7 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
 
 /**
  * <p>The image metadata format for a TGA image type.  At this time there are
- * no elements in the format (i.e. {@link javax.imageio.metadata.IIOMetadataFormat#canNodeAppear(java.lang.String, javax.imageio.ImageTypeSpecifier)}
+ * no elements in the format (i.e. {@link javax.imageio.metadata.IIOMetadataFormat#canNodeAppear(String, ImageTypeSpecifier)}
  * always returns <code>false</code>).</p>
  * 
  * @author Rob Grzywinski <a href="mailto:rgrzywinski@realityinteractive.com">rgrzywinski@realityinteractive.com</a>
@@ -61,7 +61,7 @@ public class TGAImageMetadataFormat extends IIOMetadataFormatImpl
 
     // =========================================================================
     /**
-     * @see javax.imageio.metadata.IIOMetadataFormat#canNodeAppear(java.lang.String, javax.imageio.ImageTypeSpecifier)
+     * @see javax.imageio.metadata.IIOMetadataFormat#canNodeAppear(String, ImageTypeSpecifier)
      */
     public boolean canNodeAppear(final String elementName,
                                  final ImageTypeSpecifier imageType)

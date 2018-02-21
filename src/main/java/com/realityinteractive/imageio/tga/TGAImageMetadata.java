@@ -16,7 +16,7 @@ import org.w3c.dom.Node;
 
 /**
  * <p>The image metadata for a TGA image type.  At this time there are no
- * elements in the format (i.e. {@link javax.imageio.metadata.IIOMetadataFormat#canNodeAppear(java.lang.String, javax.imageio.ImageTypeSpecifier)}
+ * elements in the format (i.e. {@link IIOMetadataFormat#canNodeAppear(String, javax.imageio.ImageTypeSpecifier)}
  * always returns <code>false</code>).</p>
  * 
  * @author Rob Grzywinski <a href="mailto:rgrzywinski@realityinteractive.com">rgrzywinski@realityinteractive.com</a>
@@ -28,7 +28,7 @@ public class TGAImageMetadata extends IIOMetadata
 {
     // =========================================================================
     /**
-     * @see javax.imageio.metadata.IIOMetadata#IIOMetadata()
+     * @see IIOMetadata#IIOMetadata()
      */
     public TGAImageMetadata()
     {
@@ -41,7 +41,7 @@ public class TGAImageMetadata extends IIOMetadata
 
     /**
      * <p>Ensure that the specified format name is supported by this metadata.
-     * If the format is not supported {@link java.lang.IllegalArgumentException}
+     * If the format is not supported {@link IllegalArgumentException}
      * is thrown.</p>
      * 
      * @param  formatName the name of the metadata format that is to be validated 
@@ -56,7 +56,7 @@ public class TGAImageMetadata extends IIOMetadata
     }
 
     /**
-     * @see javax.imageio.metadata.IIOMetadata#getAsTree(java.lang.String)
+     * @see IIOMetadata#getAsTree(String)
      */
     public Node getAsTree(final String formatName)
     {
@@ -71,7 +71,7 @@ public class TGAImageMetadata extends IIOMetadata
     }
 
     /**
-     * @see javax.imageio.metadata.IIOMetadata#getMetadataFormat(java.lang.String)
+     * @see IIOMetadata#getMetadataFormat(String)
      */
     public IIOMetadataFormat getMetadataFormat(final String formatName)
     {
@@ -85,7 +85,7 @@ public class TGAImageMetadata extends IIOMetadata
     /**
      * <p>This is read-only metadata.</p>
      * 
-     * @see javax.imageio.metadata.IIOMetadata#isReadOnly()
+     * @see IIOMetadata#isReadOnly()
      */
     public boolean isReadOnly()
     {
@@ -94,7 +94,7 @@ public class TGAImageMetadata extends IIOMetadata
     }
 
     /**
-     * @see javax.imageio.metadata.IIOMetadata#mergeTree(java.lang.String, org.w3c.dom.Node)
+     * @see IIOMetadata#mergeTree(String, Node)
      */
     public void mergeTree(final String formatName, final Node root)
         throws IIOInvalidTreeException
@@ -106,7 +106,7 @@ public class TGAImageMetadata extends IIOMetadata
     }
 
     /**
-     * @see javax.imageio.metadata.IIOMetadata#reset()
+     * @see IIOMetadata#reset()
      */
     public void reset()
     {

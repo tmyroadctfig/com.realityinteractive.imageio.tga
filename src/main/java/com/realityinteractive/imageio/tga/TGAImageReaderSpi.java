@@ -15,8 +15,8 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 
 /**
- * <p>A service provider for reading TGA images.  Only {@link javax.imageio.stream.ImageInputStream}
- * input types are allowed.  See {@link com.realityinteractive.imageio.tga.TGAImageReader}
+ * <p>A service provider for reading TGA images.  Only {@link ImageInputStream}
+ * input types are allowed.  See {@link TGAImageReader}
  * for supported features.</p>
  * 
  * @author Rob Grzywinski <a href="mailto:rgrzywinski@realityinteractive.com">rgrzywinski@realityinteractive.com</a>
@@ -122,10 +122,10 @@ public class TGAImageReaderSpi extends ImageReaderSpi
 
     // =========================================================================
     /**
-     * <p>Constructs an {@link javax.imageio.spi.ImageReaderSpi} that accepts
-     * {@link javax.imageio.stream.ImageInputStream} as its input type.</p>
+     * <p>Constructs an {@link ImageReaderSpi} that accepts
+     * {@link ImageInputStream} as its input type.</p>
      * 
-     * @see javax.imageio.spi.ImageReaderSpi#ImageReaderSpi()
+     * @see ImageReaderSpi#ImageReaderSpi()
      */
     public TGAImageReaderSpi()
     {
@@ -146,7 +146,7 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     }
 
     /**
-     * @see javax.imageio.spi.ImageReaderSpi#canDecodeInput(java.lang.Object)
+     * @see ImageReaderSpi#canDecodeInput(Object)
      */
     public boolean canDecodeInput(final Object source) 
         throws IOException
@@ -223,7 +223,7 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     }
 
     /**
-     * @see javax.imageio.spi.ImageReaderSpi#createReaderInstance(java.lang.Object)
+     * @see ImageReaderSpi#createReaderInstance(Object)
      */
     public ImageReader createReaderInstance(final Object extension)
         throws IOException
@@ -233,7 +233,7 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     }
 
     /**
-     * @see javax.imageio.spi.IIOServiceProvider#getDescription(java.util.Locale)
+     * @see javax.imageio.spi.IIOServiceProvider#getDescription(Locale)
      */
     public String getDescription(final Locale locale)
     {
