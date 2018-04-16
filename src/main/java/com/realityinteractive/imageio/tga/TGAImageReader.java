@@ -83,7 +83,7 @@ public class TGAImageReader extends ImageReader
     public void setInput(final Object input, final boolean seekForwardOnly,
                          final boolean ignoreMetadata)
     {
-        // delegate to the partent
+        // delegate to the parent
         super.setInput(input, seekForwardOnly, ignoreMetadata);
 
         // if the input is null clear the inputStream and header
@@ -375,6 +375,8 @@ public class TGAImageReader extends ImageReader
             // TODO:  this doesn't take into account the destination size or bands
             index *= width;
 
+            byte[] buffer = new byte[4];
+
             // loop over the columns
             // TODO:  this should be destinationROI.width (right?)
             // NOTE:  *if* destinations are used the RLE will break as this will
@@ -474,18 +476,14 @@ public class TGAImageReader extends ImageReader
 
                         // true color RGB(A) (8 bits per pixel)
                         case 24:
-                        case 32:
-                            // read each color component -- the alpha is only
-                            // read if there are 32 bits per pixel
-                            blue  = inputStream.readByte() & 0xFF; // unsigned
-                            green = inputStream.readByte() & 0xFF; // unsigned
-                            red   = inputStream.readByte() & 0xFF; // unsigned
-                            if(header.getBitsPerPixel() == 32)
-                                alpha = (inputStream.readByte() & 0xFF); // unsigned
-                            /* else -- 24 bits per pixel (i.e. no alpha) */
+                            inputStream.read(buffer, 0, 3);
 
-                            // combine each component into the result
-                            pixel = (red << 0) | (green << 8) | (blue << 16) | (alpha << 24);
+                            pixel = ((buffer[2] & 0xFF) << 0) | ((buffer[1] & 0xFF) << 8) | ((buffer[0] & 0xFF) << 16) | (0xFF << 24);
+                            break;
+                        case 32:
+                            inputStream.read(buffer, 0, 4);
+
+                            pixel = ((buffer[2] & 0xFF) << 0) | ((buffer[1] & 0xFF) << 8) | ((buffer[0] & 0xFF) << 16) | ((buffer[3] & 0xFF) << 24);
 
                             break;
                     }
@@ -532,6 +530,8 @@ public class TGAImageReader extends ImageReader
         // CHECK:  why is tge explicit +1 needed here ?!? 
         final int[] colorMap = new int[numberOfColors + 1];
 
+        byte[] buffer = new byte[4];
+
         // read each color map entry
         for(int i=0; i<numberOfColors; i++)
         {
@@ -570,9 +570,11 @@ public class TGAImageReader extends ImageReader
                 case 32:
                     // read each color component 
                     // CHECK:  is there an alpha?!?
-                    blue  = inputStream.readByte() & 0xFF; // unsigned
-                    green = inputStream.readByte() & 0xFF; // unsigned
-                    red   = inputStream.readByte() & 0xFF; // unsigned
+                    inputStream.read(buffer, 0, 3);
+
+                    blue  = buffer[0] & 0xFF; // unsigned
+                    green = buffer[1] & 0xFF; // unsigned
+                    red   = buffer[2] & 0xFF; // unsigned
 
                     break;
             }
@@ -590,7 +592,7 @@ public class TGAImageReader extends ImageReader
      * {@link IOException} is thrown.</p>
      * 
      * @param  param the <code>ImageReadParam</code> to be validated
-     * @param  head the <code>TGAHeader</code> that contains information about
+     * @param  header the <code>TGAHeader</code> that contains information about
      *         the source image
      * @throws IOException if the <code>ImageReadParam</code> contains non-default
      *         values
