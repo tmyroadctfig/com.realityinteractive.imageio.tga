@@ -158,7 +158,7 @@ public class TGAImageReader extends ImageReader
     /**
      * @see ImageReader#getImageTypes(int)
      */
-    public Iterator/*<ImageTypeSpecifier>*/ getImageTypes(final int imageIndex) 
+    public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) 
         throws IOException
     {
         // validate the imageIndex (this will throw if invalid)
@@ -210,7 +210,7 @@ public class TGAImageReader extends ImageReader
         }
 
         // create a list and add the ImageTypeSpecifier to it
-        final List/*<ImageTypeSpecifier>*/ imageSpecifiers = new ArrayList/*<ImageTypeSpecifier>*/();
+        final List<ImageTypeSpecifier> imageSpecifiers = new ArrayList<ImageTypeSpecifier>();
         imageSpecifiers.add(imageTypeSpecifier);
 
         return imageSpecifiers.iterator();
@@ -287,7 +287,7 @@ public class TGAImageReader extends ImageReader
     {
         // ensure that the image is of a supported type
         // NOTE:  this will implicitly ensure that the imageIndex is valid
-        final Iterator imageTypes = getImageTypes(imageIndex);
+        final Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
         if(!imageTypes.hasNext())
         {
             throw new IOException("Unsupported Image Type");
