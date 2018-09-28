@@ -349,6 +349,7 @@ public class TGAImageReader extends ImageReader
         }
         
         final boolean hasAlpha = image.getColorModel().hasAlpha();
+        final int numberOfComponents = image.getColorModel().getNumComponents();
 
         // create the destination WritableRaster
         final WritableRaster raster = imageRaster.createWritableChild(0, 0, 
@@ -369,12 +370,19 @@ public class TGAImageReader extends ImageReader
         byte blue = 0;
         byte alpha = Byte.MAX_VALUE;
         
-        final ByteBuffer inputBuffer;
-        {
-        	final byte[] backingBuffer = new byte[width * height * (hasAlpha ? 4 : 3)];
-        	inputStream.readFully(backingBuffer);
-        	inputBuffer = ByteBuffer.wrap(backingBuffer);
-        }
+        // decide how much of the image we want to buffer at a time
+        // at least 8K buffer
+        final int minBufferSize = 8192;
+        final int rowSize = width * numberOfComponents;
+        final int bufferSizeInRows = (minBufferSize / rowSize) + 1;
+        final int bufferSizeInBytes = rowSize * bufferSizeInRows;
+        int newBufferRows = 0;
+        int newBufferBytes = 0;
+        
+        // this buffer will be filled
+        final ByteBuffer inputBuffer = ByteBuffer.allocate(bufferSizeInBytes);
+        
+        final byte[] packedPixelbuffer = new byte[4];
 
         // TODO:  break out the case of 32 bit non-RLE as it can be read 
         //        directly and 24 bit non-RLE as it can be read simply.  If
@@ -399,9 +407,17 @@ public class TGAImageReader extends ImageReader
 
             // account for the width
             // TODO:  this doesn't take into account the destination size or bands
-            index *= width * (hasAlpha ? 4 : 3);
+            index *= width * numberOfComponents;
 
-            final byte[] buffer = new byte[4];
+            // check if we need to read more rows into buffer
+            // during end its possible that only a part of buffer is filled
+            if (y % bufferSizeInRows == 0) {
+            	newBufferRows = Math.min(height - y, bufferSizeInRows);
+            	newBufferBytes = newBufferRows * rowSize;
+            	inputStream.readFully(inputBuffer.array(), 0, newBufferBytes);
+            	inputBuffer.clear();
+            	inputBuffer.limit(newBufferBytes);
+            }
 
             // loop over the columns
             // TODO:  this should be destinationROI.width (right?)
@@ -447,10 +463,8 @@ public class TGAImageReader extends ImageReader
                 // NOTE:  only don't read when in a run length packet
                 if(readPixel)
                 {
-                    // NOTE:  the alpha must hav a default value since it is
+                    // NOTE:  the alpha must have a default value since it is
                     //        not guaranteed to be present for each pixel read
-//                    int red = 0, green = 0, blue = 0;
-//					final int alpha = 0xFF;
 
                     // read based on the number of bits per pixel
                     switch(header.getBitsPerPixel())
@@ -477,11 +491,8 @@ public class TGAImageReader extends ImageReader
                                 alpha = (byte) (packedPixel >>> 24);
                             }else /* no color map */
                             {
-                                // each color component is set to the color
+                                // each color component is set to the same color
                                 red = green = blue = (byte) data;
-                                
-                                // combine each component into the result
-//                                pixel = (red << 0) | (green << 8) | (blue << 16);
                             }
                             
                             break;
@@ -504,20 +515,19 @@ public class TGAImageReader extends ImageReader
 
                         // true color RGB(A) (8 bits per pixel)
                         case 24:
-                        	inputBuffer.get(buffer, 0, 3);
+                        	inputBuffer.get(packedPixelbuffer, 0, 3);
 
-                            red   = buffer[2];
-                            green = buffer[1];
-                            blue  = buffer[0];
+                            red   = packedPixelbuffer[2];
+                            green = packedPixelbuffer[1];
+                            blue  = packedPixelbuffer[0];
                             break;
                         case 32:
-                        	inputBuffer.get(buffer, 0, 4);
+                        	inputBuffer.get(packedPixelbuffer, 0, 4);
 
-                            red   = buffer[2];
-                            green = buffer[1];
-                            blue  = buffer[0];
-                            alpha = buffer[3];
-
+                            red   = packedPixelbuffer[2];
+                            green = packedPixelbuffer[1];
+                            blue  = packedPixelbuffer[0];
+                            alpha = packedPixelbuffer[3];
                             break;
                     }
                 }
