@@ -14,6 +14,7 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -80,7 +81,8 @@ public class TGAImageReader extends ImageReader
      */
     // NOTE:  can't read the header in here as there would be no place for
     //        exceptions to go.  It must be read lazily.
-    public void setInput(final Object input, final boolean seekForwardOnly,
+    @Override
+	public void setInput(final Object input, final boolean seekForwardOnly,
                          final boolean ignoreMetadata)
     {
         // delegate to the parent
@@ -158,7 +160,8 @@ public class TGAImageReader extends ImageReader
     /**
      * @see ImageReader#getImageTypes(int)
      */
-    public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) 
+    @Override
+	public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) 
         throws IOException
     {
         // validate the imageIndex (this will throw if invalid)
@@ -221,7 +224,8 @@ public class TGAImageReader extends ImageReader
      * 
      * @see ImageReader#getNumImages(boolean)
      */
-    public int getNumImages(final boolean allowSearch) 
+    @Override
+	public int getNumImages(final boolean allowSearch) 
         throws IOException
     {
         // see javadoc
@@ -234,7 +238,8 @@ public class TGAImageReader extends ImageReader
      * 
      * @see ImageReader#getStreamMetadata()
      */
-    public IIOMetadata getStreamMetadata() 
+    @Override
+	public IIOMetadata getStreamMetadata() 
         throws IOException
     {
         // see javadoc
@@ -246,7 +251,8 @@ public class TGAImageReader extends ImageReader
      * 
      * @see ImageReader#getImageMetadata(int)
      */
-    public IIOMetadata getImageMetadata(final int imageIndex) 
+    @Override
+	public IIOMetadata getImageMetadata(final int imageIndex) 
         throws IOException
     {
         // see javadoc
@@ -256,7 +262,8 @@ public class TGAImageReader extends ImageReader
     /**
      * @see ImageReader#getHeight(int)
      */
-    public int getHeight(final int imageIndex) 
+    @Override
+	public int getHeight(final int imageIndex) 
         throws IOException
     {
         // validate the imageIndex (this will throw if invalid)
@@ -269,7 +276,8 @@ public class TGAImageReader extends ImageReader
     /**
      * @see ImageReader#getWidth(int)
      */
-    public int getWidth(final int imageIndex) 
+    @Override
+	public int getWidth(final int imageIndex) 
         throws IOException
     {
         // validate the imageIndex (this will throw if invalid)
@@ -282,7 +290,8 @@ public class TGAImageReader extends ImageReader
     /**
      * @see ImageReader#read(int, ImageReadParam)
      */
-    public BufferedImage read(final int imageIndex, final ImageReadParam param)
+    @Override
+	public BufferedImage read(final int imageIndex, final ImageReadParam param)
         throws IOException
     {
         // ensure that the image is of a supported type
@@ -334,6 +343,8 @@ public class TGAImageReader extends ImageReader
             // there are no destination bands
             destinationBands = null;
         }
+        
+        final boolean hasAlpha = image.getColorModel().hasAlpha();
 
         // create the destination WritableRaster
         final WritableRaster raster = imageRaster.createWritableChild(0, 0, 
@@ -349,6 +360,13 @@ public class TGAImageReader extends ImageReader
         boolean readPixel = true; // if true then a raw pixel is read.  Used by the RLE.
         boolean isRaw = false; // if true then the next pixels should be read.  Used by the RLE.
         int pixel = 0; // the current pixel data
+        
+        final ByteBuffer inputBuffer;
+        {
+        	final byte[] backingBuffer = new byte[width * height * (hasAlpha ? 4 : 3)];
+        	inputStream.readFully(backingBuffer);
+        	inputBuffer = ByteBuffer.wrap(backingBuffer);
+        }
 
         // TODO:  break out the case of 32 bit non-RLE as it can be read 
         //        directly and 24 bit non-RLE as it can be read simply.  If
@@ -402,7 +420,7 @@ public class TGAImageReader extends ImageReader
                     } else /* non-positive run length */
                     {
                         // read the repetition count field 
-                        runLength = inputStream.readByte() & 0xFF; // unsigned
+                        runLength = inputBuffer.get();
 
                         // determine which packet type:  raw or runlength
                         isRaw = ( (runLength & 0x80) == 0); // bit 7 == 0 -> raw; bit 7 == 1 -> runlength
@@ -434,7 +452,7 @@ public class TGAImageReader extends ImageReader
                         {
                             // read the data -- it is either the color map index
                             // or the color for each pixel
-                            final int data = inputStream.readByte() & 0xFF; // unsigned
+                            final int data = inputBuffer.get();
 
                             // if the image is a color mapped image then the
                             // resulting pixel is pulled from the color map, 
@@ -461,7 +479,7 @@ public class TGAImageReader extends ImageReader
                         case 16:
                         {
                             // read the two bytes 
-                            final int data = inputStream.readShort() & 0xFFFF; // unsigned
+                            final int data = inputBuffer.getShort() & 0xFFFF; // unsigned
 
                             // get each color component -- each is 5 bits
                             red   = ((data >> 10) & 0x1F) << 3;
@@ -476,12 +494,12 @@ public class TGAImageReader extends ImageReader
 
                         // true color RGB(A) (8 bits per pixel)
                         case 24:
-                            inputStream.read(buffer, 0, 3);
+                        	inputBuffer.get(buffer, 0, 3);
 
                             pixel = ((buffer[2] & 0xFF) << 0) | ((buffer[1] & 0xFF) << 8) | ((buffer[0] & 0xFF) << 16) | (0xFF << 24);
                             break;
                         case 32:
-                            inputStream.read(buffer, 0, 4);
+                        	inputBuffer.get(buffer, 0, 4);
 
                             pixel = ((buffer[2] & 0xFF) << 0) | ((buffer[1] & 0xFF) << 8) | ((buffer[0] & 0xFF) << 16) | ((buffer[3] & 0xFF) << 24);
 
