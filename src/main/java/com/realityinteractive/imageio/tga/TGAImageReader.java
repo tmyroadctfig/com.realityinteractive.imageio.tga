@@ -11,7 +11,7 @@ import java.awt.Rectangle;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferInt;
+import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -182,23 +182,27 @@ public class TGAImageReader extends ImageReader
             {
                 // determine if there is an alpha mask based on the number of
                 // samples per pixel
-                final int alphaMask;
-                if(header.getSamplesPerPixel() == 4)
-                    alphaMask = 0xFF000000;
-                else /* no alpha channel (less than 32 bits or 4 samples) */
-                    alphaMask = 0;
-
+                final boolean hasAlpha = header.getSamplesPerPixel() == 4;
+                
+                // define order of R, G, B, A bands
+                // BGR(A) is the only order can be read directly by OpenCV library, so use it
+                final int[] bandOffset;
+                if(hasAlpha)
+                	bandOffset = new int[] {2, 1, 0, 3};// BGRA
+                else
+                    bandOffset = new int[] {2, 1, 0};// BGR
+                
+                
                 // packed RGB(A) pixel data (more specifically (A)BGR)
                 // TODO:  split on 16, 24, and 32 bit images otherwise there
                 //        will be wasted space
                 final ColorSpace rgb = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-                imageTypeSpecifier = ImageTypeSpecifier.createPacked(rgb,
-                                                                     0x000000FF,
-                                                                     0x0000FF00,
-                                                                     0x00FF0000,
-                                                                     alphaMask,
-                                                                     DataBuffer.TYPE_INT,
-                                                                     false /*not pre-multiplied by an alpha*/);
+                imageTypeSpecifier = ImageTypeSpecifier.createInterleaved(
+                		rgb,
+                		bandOffset,
+                		DataBuffer.TYPE_BYTE,
+                		hasAlpha,
+                		false /*not pre-multiplied by an alpha*/);
             
                 break;
             }
@@ -354,12 +358,16 @@ public class TGAImageReader extends ImageReader
                                                                       destinationBands);
 
         // set up to read the data
-        final int[] intData = ((DataBufferInt)raster.getDataBuffer()).getData(); // CHECK:  is this valid / acceptible?
+        final byte[] intData = ((DataBufferByte)raster.getDataBuffer()).getData(); // CHECK:  is this valid / acceptible?
         int index = 0; // the index in the intData array
         int runLength = 0; // the number of pixels in a run length
         boolean readPixel = true; // if true then a raw pixel is read.  Used by the RLE.
         boolean isRaw = false; // if true then the next pixels should be read.  Used by the RLE.
-        int pixel = 0; // the current pixel data
+
+        byte red = 0;
+        byte green = 0;
+        byte blue = 0;
+        byte alpha = Byte.MAX_VALUE;
         
         final ByteBuffer inputBuffer;
         {
@@ -391,9 +399,9 @@ public class TGAImageReader extends ImageReader
 
             // account for the width
             // TODO:  this doesn't take into account the destination size or bands
-            index *= width;
+            index *= width * (hasAlpha ? 4 : 3);
 
-            byte[] buffer = new byte[4];
+            final byte[] buffer = new byte[4];
 
             // loop over the columns
             // TODO:  this should be destinationROI.width (right?)
@@ -441,7 +449,8 @@ public class TGAImageReader extends ImageReader
                 {
                     // NOTE:  the alpha must hav a default value since it is
                     //        not guaranteed to be present for each pixel read
-                    int red = 0, green = 0, blue = 0, alpha = 0xFF;
+//                    int red = 0, green = 0, blue = 0;
+//					final int alpha = 0xFF;
 
                     // read based on the number of bits per pixel
                     switch(header.getBitsPerPixel())
@@ -461,14 +470,18 @@ public class TGAImageReader extends ImageReader
                             {
                                 // the pixel is pulled from the color map
                                 // CHECK:  do sanity bounds check?
-                                pixel = colorMap[data];
-                            } else /* no color map */
+                            	final int packedPixel = colorMap[data];
+                                red = (byte) packedPixel;
+                                green = (byte) (packedPixel >>> 8);
+                                blue = (byte) (packedPixel >>> 16);
+                                alpha = (byte) (packedPixel >>> 24);
+                            }else /* no color map */
                             {
                                 // each color component is set to the color
-                                red = green = blue = data;
+                                red = green = blue = (byte) data;
                                 
                                 // combine each component into the result
-                                pixel = (red << 0) | (green << 8) | (blue << 16);
+//                                pixel = (red << 0) | (green << 8) | (blue << 16);
                             }
                             
                             break;
@@ -482,12 +495,9 @@ public class TGAImageReader extends ImageReader
                             final int data = inputBuffer.getShort() & 0xFFFF; // unsigned
 
                             // get each color component -- each is 5 bits
-                            red   = ((data >> 10) & 0x1F) << 3;
-                            green = ((data >> 5)  & 0x1F) << 3;
-                            blue  =  (data        & 0x1F) << 3;
-
-                            // combine each component into the result
-                            pixel = (red << 0) | (green << 8) | (blue << 16);
+                            red   = (byte) ((data >>> 10) << 3);
+                            green = (byte) ((data >>>  5) << 3);
+                            blue  = (byte) ((data       ) << 3);
 
                             break;
                         }
@@ -496,23 +506,35 @@ public class TGAImageReader extends ImageReader
                         case 24:
                         	inputBuffer.get(buffer, 0, 3);
 
-                            pixel = ((buffer[2] & 0xFF) << 0) | ((buffer[1] & 0xFF) << 8) | ((buffer[0] & 0xFF) << 16) | (0xFF << 24);
+                            red   = buffer[2];
+                            green = buffer[1];
+                            blue  = buffer[0];
                             break;
                         case 32:
                         	inputBuffer.get(buffer, 0, 4);
 
-                            pixel = ((buffer[2] & 0xFF) << 0) | ((buffer[1] & 0xFF) << 8) | ((buffer[0] & 0xFF) << 16) | ((buffer[3] & 0xFF) << 24);
+                            red   = buffer[2];
+                            green = buffer[1];
+                            blue  = buffer[0];
+                            alpha = buffer[3];
 
                             break;
                     }
                 }
 
                 // put the pixel in the data array
-                intData[index] = pixel;
+                
+                // BGR(A) (lower to higher bit)
+                intData[index+0] = blue;
+                intData[index+1] = green;
+                intData[index+2] = red;
+                index += 3;
+                if (hasAlpha) {
+                	intData[index] = alpha;
+                	index++;
+                }
 
-                // advance to the next pixel
                 // TODO:  the right-to-left switch
-                index++;
             }
         }
 
@@ -548,7 +570,7 @@ public class TGAImageReader extends ImageReader
         // CHECK:  why is tge explicit +1 needed here ?!? 
         final int[] colorMap = new int[numberOfColors + 1];
 
-        byte[] buffer = new byte[4];
+        final byte[] buffer = new byte[4];
 
         // read each color map entry
         for(int i=0; i<numberOfColors; i++)
