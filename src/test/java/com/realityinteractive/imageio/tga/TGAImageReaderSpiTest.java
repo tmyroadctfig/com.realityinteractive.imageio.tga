@@ -2,14 +2,15 @@ package com.realityinteractive.imageio.tga;
 
 
 import org.junit.jupiter.api.Test;
-import sun.awt.image.IntegerInterleavedRaster;
+import sun.awt.image.ByteInterleavedRaster;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import java.awt.image.BufferedImage;
-import java.awt.image.DirectColorModel;
+import java.awt.image.ComponentColorModel;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 
 class TGAImageReaderSpiTest {
 
@@ -33,13 +34,14 @@ class TGAImageReaderSpiTest {
 
         assert image.getType() == 4;
 
-        DirectColorModel color = (DirectColorModel) image.getColorModel();
-        assert color.getRedMask() == 0xff;
-        assert color.getGreenMask() == 0xff00;
-        assert color.getBlueMask() == 0xff0000;
-        assert color.getAlphaMask() == 0;
+        ComponentColorModel color = (ComponentColorModel) image.getColorModel();
+        assert color.getNumComponents() == 3;
+        assert color.getPixelSize() == 8;
+        assert Arrays.equals(color.getComponentSize(), new int[] {8, 8, 8});
+        assert color.hasAlpha() == false;
+        assert color.isAlphaPremultiplied() == false;
 
-        IntegerInterleavedRaster raster = (IntegerInterleavedRaster) image.getRaster();
+        ByteInterleavedRaster raster = (ByteInterleavedRaster) image.getRaster();
         assert raster.getWidth() == 1024;
         assert raster.getHeight() == 1024;
         assert raster.getNumBands() == 3;
