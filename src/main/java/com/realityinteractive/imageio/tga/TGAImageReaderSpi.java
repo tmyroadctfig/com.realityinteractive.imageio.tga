@@ -131,7 +131,7 @@ public class TGAImageReaderSpi extends ImageReaderSpi
     {
         super(VENDOR_NAME, VERSION, FORMAT_NAMES, SUFFIXES, MIME_TYPES, 
               READER_CLASSNAME,
-              ImageReaderSpi.STANDARD_INPUT_TYPE,
+              new Class[]{ImageInputStream.class},
               WRITER_SPI_CLASSNAMES,
               SUPPORTS_STANDARD_STREAM_METADATA_FORMAT,
               NATIVE_STREAM_METADATA_FORMAT_NAME,
