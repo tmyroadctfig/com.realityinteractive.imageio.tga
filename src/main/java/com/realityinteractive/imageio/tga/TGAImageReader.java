@@ -429,20 +429,20 @@ public class TGAImageReader extends ImageReader
                         readPixel = isRaw;
                     } else /* non-positive run length */
                     {
-                        // make sure we have
+                        // make sure we have enough input in buffer, return if end of file is reached
                         if (checkFillBuffer(inputStream, inputBuffer, bytesPerPixel + 1))
                             return image;
                         
                         // read the repetition count field 
-                        runLength = inputBuffer.get();
+                        runLength = inputBuffer.get() & 0xFF; // unsigned
 
                         // determine which packet type:  raw or runlength
                         isRaw = ( (runLength & 0x80) == 0); // bit 7 == 0 -> raw; bit 7 == 1 -> runlength
 
-                        // if a run length packet then shift to get the number
+                        // if a run length packet then set bit 7 to 0 to get length
                         if(!isRaw)
                             runLength -= 0x80;
-                        /* else -- is raw so there's no need to shift */
+                        /* else -- is raw so there's no need remove bit 7 */
 
                         // the next field is always read (it's the pixel data)
                         readPixel = true;
@@ -467,7 +467,7 @@ public class TGAImageReader extends ImageReader
                         {
                             // read the data -- it is either the color map index
                             // or the color for each pixel
-                            final int data = inputBuffer.get();
+                            final int data = inputBuffer.get() & 0xFF; // unsigned
 
                             // if the image is a color mapped image then the
                             // resulting pixel is pulled from the color map, 
