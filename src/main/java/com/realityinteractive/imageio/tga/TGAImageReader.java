@@ -372,7 +372,8 @@ public class TGAImageReader extends ImageReader
         byte alpha = (byte) 0xFF; // max value by default
         
         // How much of the image we want to buffer at a time. Don't go below 8K buffer.
-        final int minBufferSize = 16384;
+        // Buffer size should be a multiple of 3 and 4 (for buffer refills with remaining pixels).
+        final int minBufferSize = 8192 * 3;
         final ByteBuffer inputBuffer = ByteBuffer.allocate(minBufferSize);
         // Code that reads from buffer will check remaining limit and load more data if empty.
         inputBuffer.limit(0);
@@ -428,13 +429,9 @@ public class TGAImageReader extends ImageReader
                         readPixel = isRaw;
                     } else /* non-positive run length */
                     {
-                        if (!inputBuffer.hasRemaining()) {
-                            final int bytesLoaded = inputStream.read(inputBuffer.array());
-                            if (bytesLoaded == -1)
-                                return image;// done
-                            inputBuffer.position(0);
-                            inputBuffer.limit(bytesLoaded);
-                        }
+                        // make sure we have
+                        if (checkFillBuffer(inputStream, inputBuffer, bytesPerPixel + 1))
+                            return image;
                         
                         // read the repetition count field 
                         runLength = inputBuffer.get();
@@ -456,13 +453,7 @@ public class TGAImageReader extends ImageReader
                 // NOTE:  only don't read when in a run length packet
                 if(readPixel)
                 {
-                    if (inputBuffer.remaining() < bytesPerPixel) {
-                        final int bytesLoaded = inputStream.read(inputBuffer.array());
-                        if (bytesLoaded == -1)
-                            return image;// done
-                        inputBuffer.position(0);
-                        inputBuffer.limit(bytesLoaded);
-                    }
+                    checkFillBuffer(inputStream, inputBuffer, bytesPerPixel);
                     
                     // NOTE:  the alpha must have a default value since it is
                     //        not guaranteed to be present for each pixel read
@@ -554,6 +545,37 @@ public class TGAImageReader extends ImageReader
         }
 
         return image;
+    }
+    
+    /**
+     * @param input        image data to be put into the buffer
+     * @param buffer       buffer whose entire backing array is to be filled with image data
+     * @param minRemaining the refill only occurs if there are less than this remaining bytes
+     *                     in the buffer.
+     * @return             true if input signaled EOF and therefore no bytes could be read
+     * @throws IOException if there is an I/O error while reading the input
+     */
+    private boolean checkFillBuffer(ImageInputStream input, ByteBuffer buffer, int minRemaining)
+        throws IOException
+    {
+        final int remaining = buffer.remaining();
+        if (remaining < minRemaining)
+        {
+            final int bytesLoaded;
+            if (remaining != 0) {
+                // copy remaining bytes from end to start of buffer, then fill new data after remaining
+                buffer.get(buffer.array(), 0, remaining);
+                bytesLoaded = input.read(buffer.array(), remaining, buffer.capacity()-remaining);
+            } else {
+                // just fill entire buffer with new data
+                bytesLoaded = input.read(buffer.array());
+            }
+            if (bytesLoaded == -1)
+                return true;
+            buffer.position(0);
+            buffer.limit(remaining+bytesLoaded);
+        }
+        return false;
     }
     
     /**
