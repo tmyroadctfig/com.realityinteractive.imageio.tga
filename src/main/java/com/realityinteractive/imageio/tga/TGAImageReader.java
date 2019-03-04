@@ -357,6 +357,9 @@ public class TGAImageReader extends ImageReader
                                                                       destinationBands);
 
         // divide to ceiling
+        if (header.getBitsPerPixel() == 16 && hasAlpha) {
+            throw new UnsupportedOperationException("This decoder does not support 1 bit alpha for 16 bit images.");
+        }
         final int bytesPerPixel = (header.getBitsPerPixel() + 7) / 8;
 
         // set up to read the data
@@ -375,6 +378,7 @@ public class TGAImageReader extends ImageReader
         // Buffer size should be a multiple of 3 and 4 (for buffer refills with remaining pixels).
         final int minBufferSize = 8192 * 3;
         final ByteBuffer inputBuffer = ByteBuffer.allocate(minBufferSize);
+        inputBuffer.order(ByteOrder.LITTLE_ENDIAN);
         // Code that reads from buffer will check remaining limit and load more data if empty.
         inputBuffer.limit(0);
 
@@ -497,9 +501,15 @@ public class TGAImageReader extends ImageReader
                             final int data = inputBuffer.getShort() & 0xFFFF; // unsigned
 
                             // get each color component -- each is 5 bits
-                            red   = (byte) ((data >>> 10) << 3);
-                            green = (byte) ((data >>>  5) << 3);
-                            blue  = (byte) ((data       ) << 3);
+                            red   = (byte) ((data >>> 10) & 0x1F);
+                            green = (byte) ((data >>>  5) & 0x1F);
+                            blue  = (byte) (data          & 0x1F);
+
+                            // shift bits up to fill higher 5 bits and approximate low bits
+                            // so that 5 bit max value (0xF8) maps to 8 bit max value (0xFF)
+                            red   = (byte) ((red   << 3) + (red   >>> 2));
+                            green = (byte) ((green << 3) + (green >>> 2));
+                            blue  = (byte) ((blue  << 3) + (blue  >>> 2));
                             break;
                         }
 
@@ -631,13 +641,19 @@ public class TGAImageReader extends ImageReader
                 case 15:
                 case 16:
                 {
-                    // read the two bytes 
+                    // read the two bytes
                     final int data = inputStream.readShort() & 0xFFFF; // unsigned
 
                     // get each color component -- each is 5 bits
-                    red   = ((data >> 10) & 0x1F) << 3;
-                    green = ((data >> 5)  & 0x1F) << 3;
-                    blue  =  (data        & 0x1F) << 3;
+                    red   = (byte) ((data >>> 10) & 0x1F);
+                    green = (byte) ((data >>>  5) & 0x1F);
+                    blue  = (byte) (data          & 0x1F);
+                    
+                    // shift bits up to fill higher 5 bits and approximate low bits
+                    // so that 5 bit max value (0xF8) maps to 8 bit max value (0xFF)
+                    red   = (byte) ((red   << 3) + (red   >>> 2));
+                    green = (byte) ((green << 3) + (green >>> 2));
+                    blue  = (byte) ((blue  << 3) + (blue  >>> 2));
 
                     break;
                 }
