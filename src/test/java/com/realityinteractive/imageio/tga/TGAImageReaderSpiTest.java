@@ -1,16 +1,22 @@
 package com.realityinteractive.imageio.tga;
 
 
-import org.junit.jupiter.api.Test;
-import sun.awt.image.ByteInterleavedRaster;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-import javax.imageio.ImageIO;
-import javax.imageio.spi.IIORegistry;
 import java.awt.image.BufferedImage;
 import java.awt.image.ComponentColorModel;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
+
+import javax.imageio.ImageIO;
+import javax.imageio.spi.IIORegistry;
+
+import org.junit.jupiter.api.Test;
+
+import sun.awt.image.ByteInterleavedRaster;
 
 class TGAImageReaderSpiTest {
 
@@ -20,7 +26,7 @@ class TGAImageReaderSpiTest {
         URL url = getClass().getClassLoader().getResource("PlyonTexture.tga");
         BufferedImage image = ImageIO.read(url);
 
-        assert image == null;
+        assertNull(image);
     }
 
     @Test
@@ -32,25 +38,28 @@ class TGAImageReaderSpiTest {
         URL url = getClass().getClassLoader().getResource("PlyonTexture.tga");
         BufferedImage image = ImageIO.read(url);
 
-        assert image.getType() == 4;
+        assertEquals(BufferedImage.TYPE_3BYTE_BGR, image.getType());
 
         ComponentColorModel color = (ComponentColorModel) image.getColorModel();
-        assert color.getNumComponents() == 3;
-        assert color.getPixelSize() == 8;
-        assert Arrays.equals(color.getComponentSize(), new int[] {8, 8, 8});
-        assert color.hasAlpha() == false;
-        assert color.isAlphaPremultiplied() == false;
+        assertEquals(3, color.getNumComponents());
+        assertEquals(24, color.getPixelSize());
+        assertArrayEquals(new int[] {8, 8, 8}, color.getComponentSize());
+        assertFalse(color.hasAlpha());
+        assertFalse(color.isAlphaPremultiplied());
 
         ByteInterleavedRaster raster = (ByteInterleavedRaster) image.getRaster();
-        assert raster.getWidth() == 1024;
-        assert raster.getHeight() == 1024;
-        assert raster.getNumBands() == 3;
-        assert raster.getSampleModelTranslateX() == 0;
-        assert raster.getSampleModelTranslateY() == 0;
-        assert raster.getDataOffset(0) == 0;
+        assertEquals(1024, raster.getWidth());
+        assertEquals(1024, raster.getHeight());
+        assertEquals(3, raster.getNumBands());
+        assertEquals(0, raster.getSampleModelTranslateX());
+        assertEquals(0, raster.getSampleModelTranslateY());
 
-        assert image.getPropertyNames() == null;
+        assertEquals(0, raster.getDataOffset(2));
+        assertEquals(1, raster.getDataOffset(1));
+        assertEquals(2, raster.getDataOffset(0));
 
-        assert image.getAccelerationPriority() == 0.5;
+        assertNull(image.getPropertyNames());
+
+        assertEquals(0.5, image.getAccelerationPriority());
     }
 }
