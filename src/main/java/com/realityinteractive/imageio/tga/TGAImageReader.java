@@ -14,6 +14,7 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -380,7 +381,8 @@ public class TGAImageReader extends ImageReader
         final ByteBuffer inputBuffer = ByteBuffer.allocate(minBufferSize);
         inputBuffer.order(ByteOrder.LITTLE_ENDIAN);
         // Code that reads from buffer will check remaining limit and load more data if empty.
-        inputBuffer.limit(0);
+        // Cast is workaround for https://jira.mongodb.org/browse/JAVA-2559
+        ((Buffer)inputBuffer).limit(0);
 
         final byte[] packedPixelbuffer = new byte[4];
 
@@ -582,8 +584,9 @@ public class TGAImageReader extends ImageReader
             }
             if (bytesLoaded == -1)
                 return true;
-            buffer.position(0);
-            buffer.limit(remaining+bytesLoaded);
+            // cast is workaround for https://jira.mongodb.org/browse/JAVA-2559
+            ((Buffer)buffer).position(0);
+            ((Buffer)buffer).limit(remaining+bytesLoaded);
         }
         return false;
     }
