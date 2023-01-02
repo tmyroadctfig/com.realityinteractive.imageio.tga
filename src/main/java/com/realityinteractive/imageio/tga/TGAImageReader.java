@@ -31,7 +31,7 @@ import javax.imageio.stream.ImageInputStream;
 /**
  * <p>The {@link ImageReader} that exposes the TGA image reading.
  * 8, 15, 16, 24 and 32 bit true color or color mapped (RLE compressed or 
- * uncompressed) are supported.  Monochrome images are not supported.</p>
+ * uncompressed) are supported.  Monochrome images 8 and 16 bit are supported.</p>
  * 
  * <p>Great care should be employed with {@link ImageReadParam}s.
  * Little to no effort has been made to correctly handle sub-sampling or 
@@ -208,8 +208,15 @@ public class TGAImageReader extends ImageReader
 
             case TGAConstants.MONO:
             case TGAConstants.RLE_MONO:
-                throw new IllegalArgumentException("Monochrome image type not supported.");
-            
+            {
+                final boolean hasAlpha = header.getSamplesPerPixel() == 2;
+                if(hasAlpha) {
+                    imageTypeSpecifier = ImageTypeSpecifier.createGrayscale(8, DataBuffer.TYPE_BYTE, false, false /*not pre-multiplied by an alpha*/);
+                } else {                    
+                    imageTypeSpecifier = ImageTypeSpecifier.createGrayscale(8, DataBuffer.TYPE_BYTE, false);
+                }
+                break;
+            }
             case TGAConstants.NO_IMAGE:
             default:
                 throw new IllegalArgumentException("The image type is not known."); // FIXME:  localize
@@ -358,8 +365,8 @@ public class TGAImageReader extends ImageReader
                                                                       destinationBands);
 
         // divide to ceiling
-        if (header.getBitsPerPixel() == 16 && hasAlpha) {
-            throw new UnsupportedOperationException("This decoder does not support 1 bit alpha for 16 bit images.");
+        if (!header.isMono() && header.getBitsPerPixel() == 16 && hasAlpha) {
+            throw new UnsupportedOperationException("This decoder does not support 1 bit alpha for 16 bit color images.");
         }
         final int bytesPerPixel = (header.getBitsPerPixel() + 7) / 8;
 
@@ -370,6 +377,7 @@ public class TGAImageReader extends ImageReader
         boolean readPixel = true; // if true then a raw pixel is read.  Used by the RLE.
         boolean isRaw = false; // if true then the next pixels should be read.  Used by the RLE.
 
+        byte grey = 0;
         byte red = 0;
         byte green = 0;
         byte blue = 0;
@@ -461,96 +469,124 @@ public class TGAImageReader extends ImageReader
                 {
                     checkFillBuffer(inputStream, inputBuffer, bytesPerPixel);
                     
-                    // NOTE:  the alpha must have a default value since it is
-                    //        not guaranteed to be present for each pixel read
-
-                    // read based on the number of bits/bytes per pixel
-                    switch(bytesPerPixel)
-                    {
-                        // grey scale (R = G = B)
-                        case 1:
-                        default:
+                    if (header.isMono()) {
+                        // read based on the number of bits/bytes per pixel
+                        switch(bytesPerPixel)
                         {
-                            // read the data -- it is either the color map index
-                            // or the color for each pixel
-                            final int data = inputBuffer.get() & 0xFF; // unsigned
-
-                            // if the image is a color mapped image then the
-                            // resulting pixel is pulled from the color map, 
-                            // otherwise each pixel gets the data 
-                            if(header.hasColorMap())
+                            // grey scale (8)
+                            case 1:
                             {
-                                // the pixel is pulled from the color map
-                                // CHECK:  do sanity bounds check?
-                                final int packedPixel = colorMap[data];
-                                red = (byte) packedPixel;
-                                green = (byte) (packedPixel >>> 8);
-                                blue = (byte) (packedPixel >>> 16);
-                                alpha = (byte) (packedPixel >>> 24);
-                            } else /* no color map */
-                            {
-                                // each color component is set to the same color
-                                red = green = blue = (byte) data;
+                                final int data = inputBuffer.get() & 0xFF; // unsigned
+                                grey = (byte) data;
+                                break;
                             }
-                            
-                            break;
+                            // grey scale + alpha (8-8)
+                            case 2:
+                            {
+                                inputBuffer.get(packedPixelbuffer, 0, 2);
+                                grey = packedPixelbuffer[0];
+                                alpha = packedPixelbuffer[1];
+                                break;
+                            }
                         }
+                    } else {
 
-                        // RGB (5-5-5)
-                        case 2:
+                        // NOTE:  the alpha must have a default value since it is
+                        //        not guaranteed to be present for each pixel read
+
+                        // read based on the number of bits/bytes per pixel
+                        switch(bytesPerPixel)
                         {
-                            // read the two bytes 
-                            final int data = inputBuffer.getShort() & 0xFFFF; // unsigned
+                            // grey scale (R = G = B)
+                            case 1:
+                            default:
+                            {
+                                // read the data -- it is either the color map index
+                                // or the color for each pixel
+                                final int data = inputBuffer.get() & 0xFF; // unsigned
 
-                            // get each color component -- each is 5 bits
-                            red   = (byte) ((data >>> 10) & 0x1F);
-                            green = (byte) ((data >>>  5) & 0x1F);
-                            blue  = (byte) (data          & 0x1F);
+                                // if the image is a color mapped image then the
+                                // resulting pixel is pulled from the color map, 
+                                // otherwise each pixel gets the data 
+                                if(header.hasColorMap())
+                                {
+                                    // the pixel is pulled from the color map
+                                    // CHECK:  do sanity bounds check?
+                                    final int packedPixel = colorMap[data];
+                                    red = (byte) packedPixel;
+                                    green = (byte) (packedPixel >>> 8);
+                                    blue = (byte) (packedPixel >>> 16);
+                                    alpha = (byte) (packedPixel >>> 24);
+                                } else /* no color map */
+                                {
+                                    // each color component is set to the same color
+                                    red = green = blue = (byte) data;
+                                }
 
-                            // shift bits up to fill higher 5 bits and approximate low bits
-                            // so that 5 bit max value (0xF8) maps to 8 bit max value (0xFF)
-                            red   = (byte) ((red   << 3) + (red   >>> 2));
-                            green = (byte) ((green << 3) + (green >>> 2));
-                            blue  = (byte) ((blue  << 3) + (blue  >>> 2));
-                            break;
-                        }
+                                break;
+                            }
 
-                        // true color RGB (8-8-8)
-                        case 3:
-                        {
-                            inputBuffer.get(packedPixelbuffer, 0, 3);
+                            // RGB (5-5-5)
+                            case 2:
+                            {
+                                // read the two bytes 
+                                final int data = inputBuffer.getShort() & 0xFFFF; // unsigned
 
-                            red = packedPixelbuffer[2];
-                            green = packedPixelbuffer[1];
-                            blue = packedPixelbuffer[0];
-                            break;
-                        }
-                        
-                        // true color RGBA (8-8-8-8)
-                        case 4:
-                        {
-                            inputBuffer.get(packedPixelbuffer, 0, 4);
+                                // get each color component -- each is 5 bits
+                                red   = (byte) ((data >>> 10) & 0x1F);
+                                green = (byte) ((data >>>  5) & 0x1F);
+                                blue  = (byte) (data          & 0x1F);
 
-                            red = packedPixelbuffer[2];
-                            green = packedPixelbuffer[1];
-                            blue = packedPixelbuffer[0];
-                            alpha = packedPixelbuffer[3];
-                            break;
+                                // shift bits up to fill higher 5 bits and approximate low bits
+                                // so that 5 bit max value (0xF8) maps to 8 bit max value (0xFF)
+                                red   = (byte) ((red   << 3) + (red   >>> 2));
+                                green = (byte) ((green << 3) + (green >>> 2));
+                                blue  = (byte) ((blue  << 3) + (blue  >>> 2));
+                                break;
+                            }
+
+                            // true color RGB (8-8-8)
+                            case 3:
+                            {
+                                inputBuffer.get(packedPixelbuffer, 0, 3);
+
+                                red = packedPixelbuffer[2];
+                                green = packedPixelbuffer[1];
+                                blue = packedPixelbuffer[0];
+                                break;
+                            }
+
+                            // true color RGBA (8-8-8-8)
+                            case 4:
+                            {
+                                inputBuffer.get(packedPixelbuffer, 0, 4);
+
+                                red = packedPixelbuffer[2];
+                                green = packedPixelbuffer[1];
+                                blue = packedPixelbuffer[0];
+                                alpha = packedPixelbuffer[3];
+                                break;
+                            }
                         }
                     }
                 }
                 
                 // put the pixel in the data array
                 
-                // BGR(A) (lower to higher bit)
-                resultData[index+0] = blue;
-                resultData[index+1] = green;
-                resultData[index+2] = red;
-                index += 3;
+                if (header.isMono()) {
+                    resultData[index] = grey; 
+                    index++;
+                } else {                                               
+                    // BGR(A) (lower to higher bit)                
+                    resultData[index+0] = blue;
+                    resultData[index+1] = green;
+                    resultData[index+2] = red;
+                    index += 3;                               
+                }                
                 if (hasAlpha) {
                     resultData[index] = alpha;
                     index++;
-                }
+                } 
 
                 // TODO:  the right-to-left switch
             }
