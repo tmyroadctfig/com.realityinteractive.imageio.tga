@@ -31,7 +31,10 @@ import javax.imageio.stream.ImageInputStream;
 /**
  * <p>The {@link ImageReader} that exposes the TGA image reading.
  * 8, 15, 16, 24 and 32 bit true color or color mapped (RLE compressed or 
- * uncompressed) are supported.  Monochrome images 8 and 16 bit are supported.</p>
+ * uncompressed) are supported.
+ * 8 and 16 bit monochromatic images (RLE compressed or uncompressed) are supported.
+ * 1 bit uncompressed monochromatic image is supported.
+ * </p>
  * 
  * <p>Great care should be employed with {@link ImageReadParam}s.
  * Little to no effort has been made to correctly handle sub-sampling or 
@@ -171,6 +174,10 @@ public class TGAImageReader extends ImageReader
         // read / get the header
         final TGAHeader header = getHeader();
 
+        if (header.getImageType() == TGAConstants.RLE_MONO && header.getBitsPerPixel() == 1) {
+            throw new IllegalArgumentException("Black and white (1 bit) image with RLE compression is unsupported.");
+        }
+        
         // get the ImageTypeSpecifier for the image type
         // FIXME:  finish
         final ImageTypeSpecifier imageTypeSpecifier;
@@ -209,7 +216,8 @@ public class TGAImageReader extends ImageReader
             case TGAConstants.MONO:
             case TGAConstants.RLE_MONO:
             {
-                final boolean hasAlpha = header.getSamplesPerPixel() == 2;
+                final int bitsPerPixel = header.getBitsPerPixel();
+                final boolean hasAlpha = bitsPerPixel == 16;
                 if(hasAlpha) {
                     imageTypeSpecifier = ImageTypeSpecifier.createGrayscale(8, DataBuffer.TYPE_BYTE, false, false /*not pre-multiplied by an alpha*/);
                 } else {                    
@@ -368,6 +376,7 @@ public class TGAImageReader extends ImageReader
         if (!header.isMono() && header.getBitsPerPixel() == 16 && hasAlpha) {
             throw new UnsupportedOperationException("This decoder does not support 1 bit alpha for 16 bit color images.");
         }
+        final int bitsPerPixel = header.getBitsPerPixel();
         final int bytesPerPixel = (header.getBitsPerPixel() + 7) / 8;
 
         // set up to read the data
@@ -377,6 +386,7 @@ public class TGAImageReader extends ImageReader
         boolean readPixel = true; // if true then a raw pixel is read.  Used by the RLE.
         boolean isRaw = false; // if true then the next pixels should be read.  Used by the RLE.
 
+        int eightBits = 0;
         byte grey = 0;
         byte red = 0;
         byte green = 0;
@@ -471,17 +481,24 @@ public class TGAImageReader extends ImageReader
                     
                     if (header.isMono()) {
                         // read based on the number of bits/bytes per pixel
-                        switch(bytesPerPixel)
+                        switch(bitsPerPixel)
                         {
-                            // grey scale (8)
+                            // black and white (1)
                             case 1:
+                            {                                
+                                final int data = inputBuffer.get() & 0xFF; // unsigned
+                                eightBits = data;
+                                break;
+                            }
+                            // grey scale (8)                            
+                            case 8:
                             {
                                 final int data = inputBuffer.get() & 0xFF; // unsigned
                                 grey = (byte) data;
                                 break;
                             }
                             // grey scale + alpha (8-8)
-                            case 2:
+                            case 16:
                             {
                                 inputBuffer.get(packedPixelbuffer, 0, 2);
                                 grey = packedPixelbuffer[0];
@@ -571,30 +588,42 @@ public class TGAImageReader extends ImageReader
                     }
                 }
                 
-                // put the pixel in the data array
-                
+                // put the pixel in the data array                
                 if (header.isMono()) {
-                    resultData[index] = grey; 
-                    index++;
+                    if (bitsPerPixel == 1) {                        
+                        for (int i = 7; i >= 0; i--) {
+                            int bit = (eightBits >> i) & 1;
+                            resultData[index] = bit == 1 ? (byte)0xff : 0; 
+                            index++;
+                            x++;                            
+                            if (x == width) { //lines are byte aligned
+                                break;
+                            }                           
+                        }
+                        x--; // there is x++ in main loop, so bypass it
+                    } else {
+                        resultData[index] = grey; 
+                        index++;                        
+                    }                    
                 } else {                                               
                     // BGR(A) (lower to higher bit)                
                     resultData[index+0] = blue;
                     resultData[index+1] = green;
                     resultData[index+2] = red;
-                    index += 3;                               
+                    index += 3;                                                                  
                 }                
                 if (hasAlpha) {
                     resultData[index] = alpha;
                     index++;
                 } 
-
+                
                 // TODO:  the right-to-left switch
             }
         }
 
         return image;
     }
-    
+        
     /**
      * @param input        image data to be put into the buffer
      * @param buffer       buffer whose entire backing array is to be filled with image data

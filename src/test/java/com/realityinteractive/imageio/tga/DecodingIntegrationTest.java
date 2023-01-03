@@ -74,11 +74,13 @@ class DecodingIntegrationTest
     @Test
     void test() throws IOException {        
         String[] comparedFiles = new String[] {
+                "test_mono_1_bit",            
                 "test_mono_8_bit",                
                 "test_mono_16_bit",
                 "test_16_bit",
                 "test_24_bit",
                 "test_32_bit",
+                "test_small_mono_1_bit",            
                 "test_small_mono_8_bit",
                 "test_small_mono_16_bit",
                 "test_small_16_bit",
@@ -98,6 +100,7 @@ class DecodingIntegrationTest
                 BufferedImage tga = read(basePath + tgaName);
                 assertImageEquals(png, tga, tgaName);
             }
+            if (!image.endsWith("_1_bit")) //RLE is unsupported for 1bit images
             {
                 BufferedImage tga = read(basePath + tgaRleName);
                 assertImageEquals(png, tga, tgaRleName);
