@@ -53,6 +53,12 @@ public class TGAHeader
      * {@link TGAConstants#RLE_TRUE_COLOR}, or {@link TGAConstants#RLE_MONO}.</p>
      */
     private boolean isCompressed;
+    
+    /**
+     * <p>An image is mono if its iamge type is {@link TGAConstants#MONO} or
+     * {@link TGAConstants#RLE_MONO} </p>
+     */
+    private boolean isMono;
 
     /**
      * <p>The index of the first color map entry.</p>
@@ -195,6 +201,10 @@ public class TGAHeader
         isCompressed = ( (imageType == TGAConstants.RLE_COLOR_MAP) ||
                          (imageType == TGAConstants.RLE_TRUE_COLOR) ||
                          (imageType == TGAConstants.RLE_MONO) );
+        
+        // determine if image is mono
+        isMono = ( (imageType == TGAConstants.MONO) || 
+                   (imageType == TGAConstants.RLE_MONO) );
 
         // compute the size of the color map field in bytes
         switch(bitsPerColorMapEntry)
@@ -387,8 +397,18 @@ public class TGAHeader
      */
     public int getSamplesPerPixel()
     {
-        // FIXME:  this is overly simplistic but it is accurate
+        if (isMono) {
+            return bitsPerPixel == 16 ? 2 : 1;
+        }
+        // FIXME:  this is overly simplistic but it is accurate        
         return (bitsPerPixel == 32) ? 4 : 3;
+    }
+    
+    /**
+     * <p>Checks whether image is mono</p>      
+     */
+    public boolean isMono () {
+        return isMono;
     }
 
     /**
