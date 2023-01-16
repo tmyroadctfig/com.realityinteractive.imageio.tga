@@ -16,8 +16,6 @@ import javax.imageio.spi.IIORegistry;
 
 import org.junit.jupiter.api.Test;
 
-import sun.awt.image.ByteInterleavedRaster;
-
 class TGAImageReaderSpiTest {
 
     @Test
@@ -47,16 +45,8 @@ class TGAImageReaderSpiTest {
         assertFalse(color.hasAlpha());
         assertFalse(color.isAlphaPremultiplied());
 
-        ByteInterleavedRaster raster = (ByteInterleavedRaster) image.getRaster();
-        assertEquals(1024, raster.getWidth());
-        assertEquals(1024, raster.getHeight());
-        assertEquals(3, raster.getNumBands());
-        assertEquals(0, raster.getSampleModelTranslateX());
-        assertEquals(0, raster.getSampleModelTranslateY());
-
-        assertEquals(0, raster.getDataOffset(2));
-        assertEquals(1, raster.getDataOffset(1));
-        assertEquals(2, raster.getDataOffset(0));
+        assertEquals(1024, image.getWidth());
+        assertEquals(1024, image.getHeight());
 
         assertNull(image.getPropertyNames());
 
