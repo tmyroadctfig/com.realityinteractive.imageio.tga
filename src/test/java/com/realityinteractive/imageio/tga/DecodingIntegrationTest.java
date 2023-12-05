@@ -21,7 +21,7 @@ import org.opentest4j.AssertionFailedError;
  */
 class DecodingIntegrationTest
 {   
-    private static final boolean loggingEnabled = false;
+    private static final boolean loggingEnabled = true;
     private static TGAImageReaderSpi spi;
     
     void assertImageEquals(BufferedImage expected, BufferedImage actual, String imageName) {
